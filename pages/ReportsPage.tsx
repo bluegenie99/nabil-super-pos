@@ -39,7 +39,7 @@ const ReportsPage: React.FC<PageProps> = ({ setPage, onLogout }) => {
     }
     setIsAnalyzing(true);
     const insights = await aiService.getBusinessInsights();
-    // تصحيح تعيين الحالة
+    // إصلاح النوع لضمان التوافق مع string | null
     setAiInsights(insights || 'تعذر الحصول على نصيحة حالياً.');
     setIsAnalyzing(false);
   };
