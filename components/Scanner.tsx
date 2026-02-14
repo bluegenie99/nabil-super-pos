@@ -41,7 +41,7 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, onClose }) => {
             stopScanner();
           },
           (_errorMessage: string) => {
-            // تجاهل أخطاء المسح المستمر أثناء البحث
+            // Ignored continuous scan errors
           }
         );
       } catch (err: any) {
