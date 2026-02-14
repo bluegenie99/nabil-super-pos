@@ -1,82 +1,25 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { db } from "./db";
 
 export const aiService = {
-  // تحليل الأوامر الصوتية
-  async processVoiceCommand(base64Audio: string) {
-    try {
-      // Corrected initialization to strictly follow Gemini SDK guidelines
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const products = db.getProducts();
-
-      const prompt = `
-        أنت مساعد كاشير ذكي. قمت بتلقي أمر صوتي. 
-        حلل الكلام ونفذ أحد الأفعال التالية بصيغة JSON:
-        1. ADD_ITEM: إذا طلب إضافة منتج (ارجع الباركود).
-        2. CHECK_PRICE: إذا سأل عن سعر (ارجع اسم المنتج).
-        3. CHECK_STOCK: إذا سأل عن الكمية (ارجع اسم المنتج).
-
-        قائمة المنتجات المتاحة: ${JSON.stringify(products.map(p => ({name: p.name, barcode: p.barcode, price: p.sell_price})))}
-
-        الرد يجب أن يكون JSON فقط مثل: {"action": "ADD_ITEM", "barcode": "123"}
-      `;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: [{
-          parts: [
-            { inlineData: { mimeType: 'audio/webm', data: base64Audio } },
-            { text: prompt }
-          ]
-        }],
-        config: { responseMimeType: "application/json" }
-      });
-
-      return JSON.parse(response.text || "{}");
-    } catch (error) {
-      console.error("AI Voice Error:", error);
-      return null;
-    }
-  },
-
-  // التنبؤ بالمخزون
-  async getInventoryForecast() {
-    try {
-      // Corrected initialization to strictly follow Gemini SDK guidelines
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const products = db.getProducts();
-      const saleItems = db.getSaleItems();
-
-      const prompt = `
-        بناءً على قائمة المبيعات والمنتجات التالية، حدد أهم 3 منتجات معرضة للنفاذ قريباً بناءً على سرعة سحبها وتاريخ اليوم.
-        المنتجات: ${JSON.stringify(products.slice(0, 50))}
-        المبيعات الأخيرة: ${JSON.stringify(saleItems.slice(-50))}
-        
-        أرجع النتيجة كقائمة نصية قصيرة جداً ومقنعة لصاحب المحل باللغة العربية.
-      `;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: [{ parts: [{ text: prompt }] }]
-      });
-
-      return response.text;
-    } catch (error) {
-      console.error("Inventory Forecast Error:", error);
-      return "لا توجد توقعات حالياً.";
-    }
+  // فحص هل المفتاح متوفر
+  hasKey: () => {
+    return !!process.env.API_KEY && process.env.API_KEY !== "undefined" && process.env.API_KEY.length > 10;
   },
 
   // تحليل أعمال ذكي
   async getBusinessInsights() {
+    if (!this.hasKey()) {
+      return "يرجى إضافة مفتاح Gemini API في إعدادات Vercel لتفعيل المستشار الذكي.";
+    }
+
     try {
-      // Corrected initialization to strictly follow Gemini SDK guidelines
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const report = db.getReport();
       
       const prompt = `
-        أنت مستشار أعمال خبير. قم بتحليل تقرير مبيعات اليوم لمتجر "سوبر ماركت نبيل" وقدم نصيحة واحدة ذكية ومختصرة جداً لتحسين الربحية بناءً على البيانات التالية:
+        أنت مستشار أعمال خبير بلهجة فلسطينية محببة. قم بتحليل تقرير مبيعات اليوم لمتجر "سوبر ماركت نبيل" وقدم نصيحة واحدة ذكية ومختصرة جداً لتحسين الربحية بناءً على البيانات التالية:
         
         البيانات المالية لليوم:
         - إجمالي المبيعات: ${report.todaySales} ₪
@@ -87,15 +30,45 @@ export const aiService = {
         قدم النصيحة باللغة العربية باختصار شديد.
       `;
 
+      // Use gemini-3-pro-preview for complex reasoning tasks like business analysis.
+      // Use direct string for contents as per guidelines for basic text prompts.
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: [{ parts: [{ text: prompt }] }]
+        model: 'gemini-3-pro-preview',
+        contents: prompt,
       });
 
-      return response.text;
-    } catch (error) {
+      return response.text || "لم أستطع تحليل البيانات حالياً، حاول لاحقاً.";
+    } catch (error: any) {
       console.error("AI Insights Error:", error);
-      return "تعذر الحصول على نصيحة في الوقت الحالي.";
+      if (error.message?.includes("API_KEY_INVALID")) return "خطأ: مفتاح API غير صحيح.";
+      return "حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.";
+    }
+  },
+
+  // التنبؤ بالمخزون
+  async getInventoryForecast() {
+    if (!this.hasKey()) return "توقعات المخزون تتطلب تفعيل الذكاء الاصطناعي.";
+    
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const products = db.getProducts();
+
+      const prompt = `
+        حلل حركة المخزون لمتجر نبيل وحدد أهم أصناف يجب طلبها قريباً.
+        المنتجات: ${JSON.stringify(products.slice(0, 30))}
+        أرجع النتيجة باختصار شديد (3 أصناف فقط).
+      `;
+
+      // Use gemini-3-pro-preview for inventory forecasting which involves reasoning.
+      // Use direct string for contents as per guidelines for basic text prompts.
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-preview',
+        contents: prompt,
+      });
+
+      return response.text || "لا توجد توقعات حالياً.";
+    } catch (error) {
+      return "لا توجد توقعات حالياً.";
     }
   }
 };

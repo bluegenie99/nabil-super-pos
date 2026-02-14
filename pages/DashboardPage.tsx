@@ -19,7 +19,7 @@ const DashboardPage: React.FC<PageProps> = ({ setPage, onLogout }) => {
   useEffect(() => {
     const data = db.getReport();
     setReport(data);
-    aiService.getInventoryForecast().then(setForecast);
+    aiService.getInventoryForecast().then((res) => setForecast(res || 'لا توجد توقعات حالياً.'));
     return db.subscribe(() => setReport(db.getReport()));
   }, []);
 
@@ -53,7 +53,6 @@ const DashboardPage: React.FC<PageProps> = ({ setPage, onLogout }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
-        {/* بطاقة الربح الرئيسية */}
         <div className="lg:col-span-2 bg-gradient-to-br from-blue-700 to-blue-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-10 opacity-10"><BanknotesIcon className="w-64 h-64" /></div>
             <div className="relative z-10">
@@ -74,7 +73,6 @@ const DashboardPage: React.FC<PageProps> = ({ setPage, onLogout }) => {
             </div>
         </div>
 
-        {/* توقعات الذكاء الاصطناعي */}
         <div className="bg-white rounded-[3rem] p-8 border-2 border-purple-100 shadow-xl shadow-purple-50 flex flex-col">
             <div className="flex items-center gap-2 mb-6 text-purple-600">
                 <SparklesIcon className="w-6 h-6 animate-pulse" />

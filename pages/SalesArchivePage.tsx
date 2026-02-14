@@ -5,7 +5,7 @@ import { db } from '../services/db';
 import { Sale, SaleItem } from '../types';
 import { 
   MagnifyingGlassIcon, PrinterIcon, TrashIcon, 
-  ReceiptReflectionIcon, CalendarIcon, UserIcon,
+  ReceiptRefundIcon, CalendarIcon, UserIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { PageProps } from '../App';

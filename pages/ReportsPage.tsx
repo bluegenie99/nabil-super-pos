@@ -8,7 +8,7 @@ import {
   MinusCircleIcon, TruckIcon, ChartBarIcon, 
   ShoppingBagIcon, CalendarDaysIcon, BanknotesIcon,
   SparklesIcon, ChatBubbleBottomCenterTextIcon,
-  ArrowPathIcon
+  ArrowPathIcon, ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { PageProps } from '../App';
 
@@ -21,6 +21,7 @@ const ReportsPage: React.FC<PageProps> = ({ setPage, onLogout }) => {
   
   const [aiInsights, setAiInsights] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [hasAiKey, setHasAiKey] = useState(aiService.hasKey());
 
   const refresh = () => setReport(db.getReport());
   useEffect(() => { refresh(); return db.subscribe(() => refresh()); }, []);
@@ -32,9 +33,13 @@ const ReportsPage: React.FC<PageProps> = ({ setPage, onLogout }) => {
   };
 
   const handleGetAIInsights = async () => {
+    if (!hasAiKey) {
+      setPage('/settings');
+      return;
+    }
     setIsAnalyzing(true);
     const insights = await aiService.getBusinessInsights();
-    setAiInsights(insights);
+    setAiInsights(insights || 'تعذر الحصول على نصيحة حالياً.');
     setIsAnalyzing(false);
   };
 
@@ -51,16 +56,25 @@ const ReportsPage: React.FC<PageProps> = ({ setPage, onLogout }) => {
             <button 
                 onClick={handleGetAIInsights}
                 disabled={isAnalyzing}
-                className="flex-1 md:flex-none bg-purple-600 text-white px-6 py-4 rounded-2xl font-black flex items-center justify-center gap-2 shadow-xl shadow-purple-100 active:scale-95 transition disabled:opacity-50"
+                className={`flex-1 md:flex-none px-6 py-4 rounded-2xl font-black flex items-center justify-center gap-2 shadow-xl active:scale-95 transition disabled:opacity-50 ${hasAiKey ? 'bg-purple-600 text-white shadow-purple-100' : 'bg-gray-200 text-gray-500 shadow-none'}`}
             >
                 {isAnalyzing ? <ArrowPathIcon className="w-6 h-6 animate-spin" /> : <SparklesIcon className="w-6 h-6" />}
-                {isAnalyzing ? 'جاري التحليل..' : 'نصيحة ذكية'}
+                {!hasAiKey ? 'تفعيل المستشار الذكي' : isAnalyzing ? 'جاري التحليل..' : 'نصيحة ذكية'}
             </button>
             <button onClick={() => setShowExpModal(true)} className="flex-1 md:flex-none bg-red-50 text-red-600 px-6 py-4 rounded-2xl font-black flex items-center justify-center gap-2 border border-red-100 hover:bg-red-100 transition">
                 <MinusCircleIcon className="w-6 h-6" /> تسجيل مصروف
             </button>
         </div>
       </div>
+
+      {!hasAiKey && (
+        <div className="mb-8 bg-orange-50 border-2 border-orange-100 p-6 rounded-[2rem] flex items-center gap-4 text-orange-800">
+           <ExclamationTriangleIcon className="w-10 h-10 text-orange-500 shrink-0" />
+           <p className="text-sm font-bold">
+             عقلك الذكي (AI) متوقف حالياً. لتفعيله والحصول على نصائح تجارية دقيقة، يرجى إضافة <b>API_KEY</b> في إعدادات Vercel.
+           </p>
+        </div>
+      )}
 
       {aiInsights && (
         <div className="mb-8 bg-gradient-to-r from-purple-600 to-blue-600 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden animate-in slide-in-from-top duration-500">
@@ -101,7 +115,7 @@ const ReportsPage: React.FC<PageProps> = ({ setPage, onLogout }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm">
+        <div className="bg-white p-8 rounded-[3rem] border shadow-sm">
            <h3 className="text-xl font-black flex items-center gap-2 mb-6"><ShoppingBagIcon className="w-7 h-7 text-purple-600" /> الأصناف الأكثر مبيعاً</h3>
            <div className="space-y-4">
               {report.topProducts.map((p: any, i: number) => (
@@ -112,7 +126,7 @@ const ReportsPage: React.FC<PageProps> = ({ setPage, onLogout }) => {
               ))}
            </div>
         </div>
-        <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm">
+        <div className="bg-white p-8 rounded-[3rem] border shadow-sm">
            <h3 className="text-xl font-black flex items-center gap-2 mb-6"><CalendarDaysIcon className="w-7 h-7 text-orange-600" /> تنبيهات الصلاحية</h3>
            <div className="space-y-4">
               {report.expiringSoon.map((p: any, i: number) => (
