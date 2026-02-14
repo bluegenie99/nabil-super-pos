@@ -38,10 +38,12 @@ const ReportsPage: React.FC<PageProps> = ({ setPage, onLogout }) => {
       return;
     }
     setIsAnalyzing(true);
-    const insights = await aiService.getBusinessInsights();
-    // إصلاح النوع لضمان التوافق مع string | null
-    setAiInsights(insights || 'تعذر الحصول على نصيحة حالياً.');
-    setIsAnalyzing(false);
+    try {
+      const insights = await aiService.getBusinessInsights();
+      setAiInsights(insights || 'تعذر الحصول على نصيحة حالياً.');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   if (!report) return null;

@@ -92,7 +92,7 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, onClose }) => {
         )}
       </div>
       
-      <div className="mt-8 flex gap-4 w-full max-sm:flex-col w-full max-w-sm">
+      <div className="mt-8 flex gap-4 w-full max-w-sm">
         <button 
           onClick={onClose}
           className="flex-1 py-4 bg-red-600 text-white rounded-2xl font-black text-lg shadow-lg active:scale-95 transition"

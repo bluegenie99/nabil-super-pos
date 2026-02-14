@@ -20,8 +20,8 @@ const DashboardPage: React.FC<PageProps> = ({ setPage, onLogout }) => {
     const data = db.getReport();
     setReport(data);
     
-    // تصحيح استدعاء التوقعات مع معالجة النوع
-    aiService.getInventoryForecast().then((res: string | undefined) => {
+    // تصحيح استدعاء التوقعات لمعالجة undefined
+    aiService.getInventoryForecast().then((res) => {
       setForecast(res || 'لا توجد توقعات حالياً.');
     });
 
