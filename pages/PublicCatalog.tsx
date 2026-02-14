@@ -6,7 +6,8 @@ import { SHOP_CONFIG } from '../config';
 import { 
   ShoppingBagIcon, MagnifyingGlassIcon, ChatBubbleLeftRightIcon, 
   TagIcon, MapPinIcon, UserIcon, StarIcon, XMarkIcon,
-  WalletIcon, ArrowRightOnRectangleIcon, UserPlusIcon
+  WalletIcon, ArrowRightOnRectangleIcon, UserPlusIcon,
+  ArchiveBoxIcon
 } from '@heroicons/react/24/outline';
 
 const PublicCatalog: React.FC<{ onLoginRedirect: () => void }> = ({ onLoginRedirect }) => {
@@ -16,14 +17,21 @@ const PublicCatalog: React.FC<{ onLoginRedirect: () => void }> = ({ onLoginRedir
   const [showPortal, setShowPortal] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   
-  // لنموذج الدخول/التسجيل
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [foundCustomer, setFoundCustomer] = useState<Customer | null>(null);
   const [portalError, setPortalError] = useState('');
 
   useEffect(() => {
+    // تحميل المنتجات فوراً عند الدخول
     setProducts(db.getProducts().filter(p => p.show_in_catalog !== false));
+    
+    // الاشتراك في قاعدة البيانات لتحديث القائمة فور حدوث أي تغيير
+    const unsubscribe = db.subscribe(() => {
+      setProducts(db.getProducts().filter(p => p.show_in_catalog !== false));
+    });
+    
+    return unsubscribe;
   }, []);
 
   const handlePortalCheck = (e: React.FormEvent) => {
@@ -35,7 +43,7 @@ const PublicCatalog: React.FC<{ onLoginRedirect: () => void }> = ({ onLoginRedir
       setIsRegistering(false);
     } else {
       setPortalError('هذا الرقم غير مسجل لدينا حالياً.');
-      setIsRegistering(true); // عرض خيار التسجيل إذا لم يوجد الرقم
+      setIsRegistering(true);
     }
   };
 
@@ -66,11 +74,10 @@ const PublicCatalog: React.FC<{ onLoginRedirect: () => void }> = ({ onLoginRedir
     });
   };
 
-  const totalItems = (Object.values(cart) as number[]).reduce((a, b) => a + b, 0);
+  const filtered = products.filter(p => p.name.includes(search));
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-['Cairo']" dir="rtl">
-      {/* Header */}
       <header className="bg-blue-600 text-white p-6 rounded-b-[3.5rem] shadow-xl relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
            <StarIcon className="w-64 h-64 absolute -top-10 -left-10" />
@@ -97,7 +104,7 @@ const PublicCatalog: React.FC<{ onLoginRedirect: () => void }> = ({ onLoginRedir
              <div className="bg-yellow-400 p-3 rounded-2xl text-blue-900 shadow-lg shadow-yellow-400/20 animate-pulse"><StarIcon className="w-6 h-6" /></div>
              <div className="flex-1">
                 <p className="text-sm font-black text-yellow-50">انضم لبرنامج الولاء مجاناً</p>
-                <p className="text-[10px] text-blue-100 font-bold leading-relaxed">سجل رقمك الآن، اجمع النقاط، واحصل على خصومات حقيقية عند كل شراء من السوبر ماركت!</p>
+                <p className="text-[10px] text-blue-100 font-bold leading-relaxed">سجل رقمك، اجمع النقاط، واحصل على خصومات حقيقية عند كل شراء من السوبر ماركت!</p>
              </div>
           </div>
 
@@ -110,30 +117,37 @@ const PublicCatalog: React.FC<{ onLoginRedirect: () => void }> = ({ onLoginRedir
 
       <div className="max-w-4xl mx-auto px-6 mt-10">
         <div className="flex justify-between items-center mb-8">
-            <h2 className="text-xl font-black text-gray-800 flex items-center gap-2"><TagIcon className="w-6 h-6 text-blue-600" /> قائمة المنتجات</h2>
+            <h2 className="text-xl font-black text-gray-800 flex items-center gap-2"><TagIcon className="w-6 h-6 text-blue-600" /> المنتجات المتوفرة</h2>
             <div className="bg-blue-50 px-4 py-2 rounded-xl text-[10px] font-black text-blue-600 border border-blue-100">الأسعار تشمل الضريبة</div>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-          {products.filter(p => p.name.includes(search)).map(p => (
-            <div key={p.id} className="bg-white p-5 rounded-[2.5rem] border-2 border-transparent shadow-sm hover:shadow-xl hover:border-blue-100 transition-all group relative">
-               <h4 className="font-black text-gray-800 mb-2 truncate text-lg group-hover:text-blue-600 transition-colors">{p.name}</h4>
-               <p className="text-2xl text-blue-600 font-black mb-6">{p.sell_price.toFixed(2)} ₪</p>
-               {cart[p.id] ? (
-                 <div className="flex items-center bg-blue-600 rounded-full p-1 gap-2 border-2 border-blue-500 shadow-lg animate-in zoom-in">
-                   <button onClick={() => removeFromCart(p)} className="w-10 h-10 bg-white/20 text-white rounded-full font-black shadow-sm hover:bg-white/30">-</button>
-                   <span className="flex-1 text-center font-black text-white">{cart[p.id]}</span>
-                   <button onClick={() => addToCart(p)} className="w-10 h-10 bg-white/20 text-white rounded-full font-black shadow-sm hover:bg-white/30">+</button>
-                 </div>
-               ) : (
-                 <button onClick={() => addToCart(p)} className="w-full bg-gray-900 text-white py-4 rounded-full text-xs font-black shadow-lg active:scale-95 transition-all hover:bg-blue-600">إضافة للسلة</button>
-               )}
-            </div>
-          ))}
-        </div>
+        {filtered.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+            {filtered.map(p => (
+              <div key={p.id} className="bg-white p-5 rounded-[2.5rem] border-2 border-transparent shadow-sm hover:shadow-xl hover:border-blue-100 transition-all group relative">
+                 <h4 className="font-black text-gray-800 mb-2 truncate text-lg group-hover:text-blue-600 transition-colors">{p.name}</h4>
+                 <p className="text-2xl text-blue-600 font-black mb-6">{p.sell_price.toFixed(2)} ₪</p>
+                 {cart[p.id] ? (
+                   <div className="flex items-center bg-blue-600 rounded-full p-1 gap-2 border-2 border-blue-500 shadow-lg animate-in zoom-in">
+                     <button onClick={() => removeFromCart(p)} className="w-10 h-10 bg-white/20 text-white rounded-full font-black shadow-sm hover:bg-white/30">-</button>
+                     <span className="flex-1 text-center font-black text-white">{cart[p.id]}</span>
+                     <button onClick={() => addToCart(p)} className="w-10 h-10 bg-white/20 text-white rounded-full font-black shadow-sm hover:bg-white/30">+</button>
+                   </div>
+                 ) : (
+                   <button onClick={() => addToCart(p)} className="w-full bg-gray-900 text-white py-4 rounded-full text-xs font-black shadow-lg active:scale-95 transition-all hover:bg-blue-600">إضافة للسلة</button>
+                 )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white p-20 rounded-[3.5rem] text-center border-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-gray-400">
+             <ArchiveBoxIcon className="w-20 h-20 mb-4 opacity-20" />
+             <p className="font-black">لا توجد منتجات معروضة حالياً.</p>
+             <p className="text-xs font-bold mt-2">يرجى إضافة منتجات من لوحة تحكم المدير وتفعيل خيار "العرض في المتجر".</p>
+          </div>
+        )}
       </div>
 
-      {/* بوابة الزبون */}
       {showPortal && (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-md rounded-[3.5rem] p-10 shadow-2xl animate-in slide-in-from-bottom duration-300 relative overflow-hidden">

@@ -19,7 +19,12 @@ const DashboardPage: React.FC<PageProps> = ({ setPage, onLogout }) => {
   useEffect(() => {
     const data = db.getReport();
     setReport(data);
-    aiService.getInventoryForecast().then((res) => setForecast(res || 'لا توجد توقعات حالياً.'));
+    
+    // تصحيح استدعاء التوقعات
+    aiService.getInventoryForecast().then((res) => {
+      setForecast(res || 'لا توجد توقعات حالياً.');
+    });
+
     return db.subscribe(() => setReport(db.getReport()));
   }, []);
 
